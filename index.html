@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Logistics Pro | Sistema de Roteirização</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary: #2563eb;
+        --bg: #f1f5f9;
+        --card-bg: #ffffff;
+        --border: #e2e8f0;
+        --secondary: #64748b;
+        --success: #16a34a;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: var(--bg);
+        margin: 0;
+        padding: 20px;
+        color: #1e293b;
+      }
+      .container {
+        max-width: 1300px;
+        margin: 0 auto;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid var(--primary);
+        padding-bottom: 10px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 24px;
+      }
+      .card {
+        background: var(--card-bg);
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border);
+        margin-bottom: 20px;
+      }
+
+      textarea {
+        width: 100%;
+        height: 200px;
+        padding: 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-family: monospace;
+        font-size: 0.8rem;
+        margin-bottom: 10px;
+        background: #f8fafc;
+      }
+      .btn {
+        border: none;
+        padding: 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        width: 100%;
+        font-weight: bold;
+        transition: 0.2s;
+        margin-bottom: 5px;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+      .btn-secondary {
+        background: #64748b;
+        color: white;
+      }
+
+      .region-card {
+        background: #fff;
+        border-left: 6px solid var(--primary);
+        padding: 16px;
+        margin-bottom: 15px;
+        border-radius: 8px;
+      }
+      .driver-box {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        padding: 12px;
+        border-radius: 8px;
+        margin-top: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .badge {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+      .badge-kombi {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .badge-van {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .badge-truck {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th {
+        background: #f8fafc;
+        color: var(--secondary);
+        font-size: 0.7rem;
+        padding: 10px;
+        text-align: left;
+      }
+      td {
+        padding: 10px;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.85rem;
+      }
+
+      .dist-tag {
+        background: #e2e8f0;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: bold;
+      }
+      .sobra-text {
+        font-weight: bold;
+        color: var(--success);
+      }
+
+      @media print {
+        .no-print {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>
+          🚚 Roteirizador Inteligente
+          <span style="font-weight: 400; color: var(--secondary)">v3.0</span>
+        </h1>
+        <div class="no-print">
+          <button
+            class="btn btn-secondary"
+            style="width: auto"
+            onclick="window.print()"
+          >
+            🖨️ Imprimir Romaneio
+          </button>
+        </div>
+      </header>
+
+      <div class="grid">
+        <div class="no-print">
+          <div class="card">
+            <h3 style="margin-top: 0">📦 1. Cargas do Dia</h3>
+            <textarea
+              id="inputData"
+              placeholder="cliente/região/peso"
+            ></textarea>
+            <button class="btn btn-secondary" onclick="loadExampleData()">
+              Dados de Exemplo
+            </button>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-top: 0">👤 2. Frota Ativa</h3>
+            <textarea
+              id="inputDrivers"
+              placeholder="nome/veículo/capacidade"
+            ></textarea>
+            <button class="btn btn-secondary" onclick="loadExampleDrivers()">
+              Frota Completa
+            </button>
+            <hr />
+            <button class="btn btn-primary" onclick="processarTudo()">
+              🚀 Processar Roteiro Completo
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h3 style="margin-top: 0">
+              📋 Resumo de Alocação (Ordem por Distância)
+            </h3>
+            <table id="summaryTable">
+              <thead>
+                <tr>
+                  <th>KM</th>
+                  <th>Região</th>
+                  <th>Paragens</th>
+                  <th>Peso</th>
+                  <th>Motorista</th>
+                  <th>Sobra</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div id="regionGroup"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // TABELA DE DISTÂNCIAS (REFERÊNCIA: LONDRINA)
+      const geoDB = {
+        LONDRINA: 0,
+        CAMBÉ: 12,
+        IBIPORÃ: 15,
+        ROLANDIA: 25,
+        ARAPONGAS: 37,
+        "BELA VISTA": 45,
+        APUCARANA: 54,
+        SERTANÓPOLIS: 62,
+        ASSAÍ: 70,
+        "PRADO FERREIRA": 82,
+        "MARILÂNDIA DO SUL": 85,
+        "MAUÁ DA SERRA": 105,
+        FLORESTÓPOLIS: 110,
+        "SANTO ANTÔNIO DA PLATINA": 155,
+        JACAREZINHO: 175,
+      };
+
+      function loadExampleData() {
+        document.getElementById("inputData").value =
+          `Sanches Pinta Roxo/ARAPONGAS/210
+Sanches/ARAPONGAS/816
+Bonif/ARAPONGAS/188
+Mercado Londrina/LONDRINA/2429
+Loja Cambé/CAMBÉ/997
+Super Mauá/MAUÁ DA SERRA/1159
+Farmácia Apucarana/APUCARANA/714`;
+      }
+
+      function loadExampleDrivers() {
+        document.getElementById("inputDrivers").value =
+          `MARCELO BALDINO/VAN/1500
+JOSE CARLOS/CAMINHAO/4000
+RODRIGO MARONEZZ/VAN/1500
+FLAVIO FELIX/KOMBI/800
+EDER BERALDI/VAN/1500`;
+      }
+
+      function processarTudo() {
+        const cargaRaw = document.getElementById("inputData").value.trim();
+        const frotaRaw = document.getElementById("inputDrivers").value.trim();
+        if (!cargaRaw || !frotaRaw) return;
+
+        // 1. Agrupar Cargas
+        const groups = {};
+        cargaRaw.split("\n").forEach((line) => {
+          const parts = line.split("/");
+          if (parts.length < 3) return;
+          const [client, region, weight] = parts.map((s) =>
+            s.trim().toUpperCase(),
+          );
+          if (!groups[region]) groups[region] = { clients: [], totalWeight: 0 };
+          const p = parseFloat(weight) || 0;
+          groups[region].clients.push({ name: client, weight: p });
+          groups[region].totalWeight += p;
+        });
+
+        // 2. Processar Frota: inicializa capacidade restante e alocações
+        let drivers = frotaRaw
+          .split("\n")
+          .map((line) => {
+            const parts = line.split("/");
+            if (parts.length < 3) return null;
+            const [nome, tipo, cap] = parts.map((s) => s.trim().toUpperCase());
+            return {
+              nome,
+              tipo,
+              capacidade: parseFloat(cap) || 0,
+              restante: parseFloat(cap) || 0,
+              allocations: [],
+            };
+          })
+          .filter((d) => d !== null);
+
+        // 3. ORDENAÇÃO: Prioridade Londrina + Proximidade Radial
+        const sortedRegions = Object.keys(groups).sort((a, b) => {
+          if (a === "LONDRINA") return -1;
+          if (b === "LONDRINA") return 1;
+          return (geoDB[a] || 999) - (geoDB[b] || 999);
+        });
+
+        // 4. ALOCAR: divisão por capacidade, transbordo e multi-itinerário
+        // Estratégia: percorre regiões em ordem, para cada cliente distribui seu peso
+        // sequencialmente entre motoristas (preenchendo o veículo atual antes de passar ao próximo).
+        const allocationResult = {};
+        let driverIdx = 0;
+        sortedRegions.forEach((region) => {
+          const info = groups[region];
+          allocationResult[region] = {
+            clients: info.clients,
+            totalWeight: info.totalWeight,
+            allocations: [],
+            unallocated: 0,
+          };
+
+          info.clients.forEach((client) => {
+            let remainingClient = client.weight;
+            while (remainingClient > 0 && driverIdx < drivers.length) {
+              const drv = drivers[driverIdx];
+              if (drv.restante <= 0) {
+                driverIdx++;
+                continue;
+              }
+              const give = Math.min(remainingClient, drv.restante);
+              // registrar alocação
+              allocationResult[region].allocations.push({
+                driver: drv,
+                driverName: drv.nome,
+                weight: give,
+                client: client.name,
+              });
+              drv.allocations.push({
+                region,
+                client: client.name,
+                weight: give,
+              });
+              drv.restante -= give;
+              remainingClient -= give;
+              if (drv.restante <= 0) driverIdx++;
+            }
+            if (remainingClient > 0) {
+              allocationResult[region].unallocated += remainingClient;
+            }
+          });
+        });
+
+        render(groups, sortedRegions, drivers, allocationResult);
+      }
+
+      function badgeClass(tipo) {
+        if (!tipo) return "badge-truck";
+        if (tipo.includes("KOMBI")) return "badge-kombi";
+        if (tipo.includes("VAN")) return "badge-van";
+        return "badge-truck";
+      }
+
+      function render(groups, sortedRegions, drivers, allocationResult) {
+        const tableBody = document.querySelector("#summaryTable tbody");
+        const container = document.getElementById("regionGroup");
+        tableBody.innerHTML = "";
+        container.innerHTML = "";
+
+        sortedRegions.forEach((region) => {
+          const data = groups[region];
+          const km = geoDB[region] ?? "---";
+          const paragens = data.clients.length;
+          const alloc = allocationResult ? allocationResult[region] : null;
+
+          // resumo de motoristas alocados para esta região
+          const driversAllocated =
+            alloc && alloc.allocations.length > 0
+              ? [...new Set(alloc.allocations.map((a) => a.driverName))].join(
+                  ", ",
+                )
+              : null;
+
+          const totalAllocated = alloc
+            ? alloc.allocations.reduce((s, a) => s + a.weight, 0)
+            : 0;
+          const unallocated = alloc ? alloc.unallocated : 0;
+
+          // Tabela
+          tableBody.innerHTML += `
+            <tr>
+              <td><span class="dist-tag">${km} km</span></td>
+              <td><b>${region}</b></td>
+              <td>${paragens}</td>
+              <td>${data.totalWeight.toLocaleString()} kg</td>
+              <td>${driversAllocated ? driversAllocated : '<b style="color:red">NÃO ALOCADO</b>'}</td>
+              <td class="sobra-text">${unallocated > 0 ? unallocated + " kg" : ""}</td>
+            </tr>
+          `;
+
+          // Detalhes por região: mostra alocações por motorista e sobra/unallocated
+          container.innerHTML += `
+            <div class="region-card">
+              <div style="display:flex; justify-content:space-between">
+                <strong>📍 ${region} <span style="font-weight:normal; color:#666">(${km} km | ${paragens} paragens)</span></strong>
+                <span class="badge ${driversAllocated ? badgeClass(alloc.allocations[0].driver.tipo) : ""}">${driversAllocated ? alloc.allocations[0].driver.tipo : "INDISPONÍVEL"}</span>
+              </div>
+              <div style="font-size:0.8rem; margin:10px 0; color:#475569">
+                ${data.clients.map((c) => `• ${c.name}: ${c.weight}kg`).join("<br>")}
+              </div>
+              <div style="margin-top:8px">
+                ${
+                  alloc && alloc.allocations.length > 0
+                    ? alloc.allocations
+                        .map(
+                          (a) => `
+                  <div class=\"driver-box\">\n
+                    <div>\n
+                      <div style=\"font-size:0.7rem; color:var(--secondary)\">MOTORISTA:</div>\n
+                      <div style=\"font-weight:700\">${a.driverName}</div>\n
+                      <div style=\"font-size:0.75rem; color:#475569\">Alocado: ${a.weight} kg — para ${a.client}</div>\n
+                    </div>\n
+                    <div style=\"text-align:right\">\n
+                      <div style=\"font-size:0.7rem; color:var(--secondary)\">RESTANTE DO VEÍCULO:</div>\n
+                      <div class=\"sobra-text\">${a.driver.restante} kg</div>\n
+                    </div>\n
+                  </div>
+                `,
+                        )
+                        .join("")
+                    : `<div class=\"driver-box\">Nenhuma alocação possível. Sobra: ${data.totalWeight} kg</div>`
+                }
+              </div>
+              ${unallocated > 0 ? `<div style=\"margin-top:8px;color:#b91c1c;font-weight:700\">⚠️ Não alocado: ${unallocated} kg</div>` : ""}
+            </div>
+          `;
+        });
+      }
+    </script>
+  </body>
+</html>
